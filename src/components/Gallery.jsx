@@ -3,6 +3,7 @@ import { MODELS } from '../data/content';
 
 export default function Gallery() {
   const trackRef = useRef(null);
+  const snapTimer = useRef(0);
   const [active, setActive] = useState(0);
 
   const scrollToIndex = useCallback((index) => {
@@ -11,7 +12,18 @@ export default function Gallery() {
     const slide = track.children[index];
     if (!slide) return;
     const target = slide.offsetLeft + slide.clientWidth / 2 - track.clientWidth / 2;
-    track.scrollTo({ left: target, behavior: 'smooth' });
+    const reduce = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+    // scroll-snap-type: mandatory отменяет короткий программный smooth-scroll
+    // (кнопки двигают на одну точку привязки) в Chrome/Safari. Отключаем snap
+    // на время анимации и возвращаем после — иначе кнопки «не листают».
+    track.style.scrollSnapType = 'none';
+    track.scrollTo({ left: target, behavior: reduce ? 'auto' : 'smooth' });
+
+    clearTimeout(snapTimer.current);
+    snapTimer.current = setTimeout(() => {
+      track.style.scrollSnapType = '';
+    }, 600);
   }, []);
 
   const handlePrev = () => scrollToIndex(Math.max(0, active - 1));
@@ -26,17 +38,28 @@ export default function Gallery() {
     const onScroll = () => {
       cancelAnimationFrame(raf);
       raf = requestAnimationFrame(() => {
-        const center = track.scrollLeft + track.clientWidth / 2;
-        let closest = 0;
-        let min = Infinity;
-        Array.from(track.children).forEach((child, i) => {
-          const childCenter = child.offsetLeft + child.clientWidth / 2;
-          const dist = Math.abs(center - childCenter);
-          if (dist < min) {
-            min = dist;
-            closest = i;
-          }
-        });
+        const maxScroll = track.scrollWidth - track.clientWidth;
+        let closest;
+        // На краях слайд нельзя центрировать (прокрутка упирается в 0/max),
+        // поэтому первую/последнюю точки определяем по достижению края —
+        // иначе на десктопе крайние фото недостижимы, а точка «врёт».
+        if (track.scrollLeft <= 1) {
+          closest = 0;
+        } else if (track.scrollLeft >= maxScroll - 1) {
+          closest = track.children.length - 1;
+        } else {
+          const center = track.scrollLeft + track.clientWidth / 2;
+          let min = Infinity;
+          closest = 0;
+          Array.from(track.children).forEach((child, i) => {
+            const childCenter = child.offsetLeft + child.clientWidth / 2;
+            const dist = Math.abs(center - childCenter);
+            if (dist < min) {
+              min = dist;
+              closest = i;
+            }
+          });
+        }
         setActive(closest);
       });
     };
@@ -45,6 +68,7 @@ export default function Gallery() {
     return () => {
       track.removeEventListener('scroll', onScroll);
       cancelAnimationFrame(raf);
+      clearTimeout(snapTimer.current);
     };
   }, []);
 
