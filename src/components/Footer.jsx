@@ -12,8 +12,8 @@ export default function Footer() {
             <a href={TELEGRAM_URL} target="_blank" rel="noopener noreferrer">
               Связаться с нами
             </a>
-            <a href="#about">Вакансия</a>
             <a href="#models">Портфолио</a>
+            <a href="#about">Вакансия</a>
             <a href="#offices">Города</a>
             <a href="#contact">Контакты</a>
           </nav>

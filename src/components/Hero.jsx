@@ -7,7 +7,7 @@ export default function Hero() {
         <p className="hero__subtitle">Профессиональные фотосессии</p>
       </div>
 
-      <a className="hero__scroll" href="#about" aria-label="Листать вниз">
+      <a className="hero__scroll" href="#models" aria-label="Листать вниз">
         <span>Листать</span>
         <span className="hero__scroll-line" aria-hidden="true" />
       </a>

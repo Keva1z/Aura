@@ -1,0 +1,41 @@
+# Aura — отдельный статический сайт.
+# Контейнер НЕ публикует порты на хост: внешний nginx из Shift-Hub
+# дотягивается до него по общей docker-сети `web` (по имени `aura`).
+#
+# Перед первым запуском один раз создать общую сеть:
+#   docker network create web
+#
+# Запуск / обновление:
+#   docker compose up -d --build
+
+services:
+  aura:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      target: production
+    image: aura-frontend:latest
+    container_name: aura
+    restart: unless-stopped
+    networks:
+      - web
+    healthcheck:
+      test: [ "CMD", "wget", "--quiet", "--tries=1", "--spider", "http://localhost/" ]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 10s
+    deploy:
+      resources:
+        limits:
+          cpus: '0.5'
+          memory: 128M
+        reservations:
+          cpus: '0.1'
+          memory: 32M
+
+networks:
+  # Общая сеть с edge-nginx из Shift-Hub. Создаётся вручную один раз:
+  #   docker network create web
+  web:
+    external: true

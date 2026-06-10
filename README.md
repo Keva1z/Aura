@@ -5,6 +5,8 @@
 
 ## Запуск
 
+Нужен установленный **[Node.js](https://nodejs.org) 18+** (проверить — `node -v`).
+
 ```bash
 npm install      # установить зависимости (один раз)
 npm run dev      # запустить локально — откроется на http://localhost:5173
@@ -51,12 +53,12 @@ model-1.jpg … model-6.jpg
 ```
 src/
   main.jsx              — точка входа
-  App.jsx               — сборка секций
+  App.jsx               — сборка секций (их порядок на странице)
   data/content.js       — ВСЕ тексты, ссылки, города, фото
   components/
     Hero.jsx            — крупная надпись «Аура»
-    About.jsx           — текст вакансии
     Gallery.jsx         — карусель с фото
+    About.jsx           — текст вакансии
     Offices.jsx         — города + кнопка «Работать с нами»
     Contact.jsx         — почта + телефон с флагом РФ
     Footer.jsx          — ссылки подвала

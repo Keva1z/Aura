@@ -4,7 +4,7 @@
 // ============================================================
 
 // TODO: вставьте реальную ссылку на личный диалог в Telegram
-export const TELEGRAM_URL = 'https://t.me/your_username';
+export const TELEGRAM_URL = 'https://t.me/brbrcold';
 
 // TODO: вставьте реальную почту (сейчас — заглушка)
 export const EMAIL = 'info@aura-models.ru';

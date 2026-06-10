@@ -90,7 +90,7 @@ export default function Gallery() {
         </button>
       </div>
 
-      <div className="gallery__dots" role="tablist" aria-label="Навигация по фото">
+      <div className="gallery__dots" role="group" aria-label="Навигация по фото">
         {MODELS.map((_, i) => (
           <button
             type="button"
