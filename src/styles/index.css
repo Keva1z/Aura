@@ -687,13 +687,6 @@ body::after {
 .contact__value:hover {
   opacity: 0.65;
 }
-.contact__flag {
-  width: 30px;
-  height: 20px;
-  border-radius: 2px;
-  flex: 0 0 auto;
-  box-shadow: 0 0 0 1px var(--line);
-}
 
 @media (min-width: 720px) {
   .contact__grid {
