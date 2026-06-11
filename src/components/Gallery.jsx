@@ -1,76 +1,60 @@
-import { useRef, useState, useEffect, useCallback } from 'react';
+import { useRef, useState, useEffect } from 'react';
 import { MODELS } from '../data/content';
 
+// На телефоне видно 1 фото (крупно), на десктопе — 3. Брейкпоинт совпадает с CSS.
+const MOBILE_MQ = '(max-width: 700px)';
+const visibleFor = () => (window.matchMedia(MOBILE_MQ).matches ? 1 : 3);
+
+/**
+ * Карусель на CSS-transform (без нативного скролла — работает во всех браузерах).
+ * Окно из `visible` фото сдвигается по одному. Точек = MODELS.length - visible + 1
+ * (телефон: 6 точек по 1 фото; десктоп: 4 точки по 3 фото). На телефоне стрелки
+ * скрыты (CSS), листание — свайпом.
+ */
 export default function Gallery() {
+  const viewportRef = useRef(null);
   const trackRef = useRef(null);
-  const snapTimer = useRef(0);
+  const [visible, setVisible] = useState(visibleFor);
   const [active, setActive] = useState(0);
+  const [offset, setOffset] = useState(0);
 
-  const scrollToIndex = useCallback((index) => {
-    const track = trackRef.current;
-    if (!track) return;
-    const slide = track.children[index];
-    if (!slide) return;
-    const target = slide.offsetLeft + slide.clientWidth / 2 - track.clientWidth / 2;
-    const reduce = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+  const steps = Math.max(1, MODELS.length - visible + 1);
+  const current = Math.min(active, steps - 1); // безопасный индекс при смене брейкпоинта
 
-    // scroll-snap-type: mandatory отменяет короткий программный smooth-scroll
-    // (кнопки двигают на одну точку привязки) в Chrome/Safari. Отключаем snap
-    // на время анимации и возвращаем после — иначе кнопки «не листают».
-    track.style.scrollSnapType = 'none';
-    track.scrollTo({ left: target, behavior: reduce ? 'auto' : 'smooth' });
+  const go = (pos) => setActive(Math.max(0, Math.min(steps - 1, pos)));
 
-    clearTimeout(snapTimer.current);
-    snapTimer.current = setTimeout(() => {
-      track.style.scrollSnapType = '';
-    }, 600);
-  }, []);
-
-  const handlePrev = () => scrollToIndex(Math.max(0, active - 1));
-  const handleNext = () => scrollToIndex(Math.min(MODELS.length - 1, active + 1));
-
-  // Отслеживаем ближайший к центру слайд, чтобы подсвечивать точки.
+  // Следим за сменой брейкпоинта (1 фото / 3 фото).
   useEffect(() => {
-    const track = trackRef.current;
-    if (!track) return;
-    let raf = 0;
-
-    const onScroll = () => {
-      cancelAnimationFrame(raf);
-      raf = requestAnimationFrame(() => {
-        const maxScroll = track.scrollWidth - track.clientWidth;
-        let closest;
-        // На краях слайд нельзя центрировать (прокрутка упирается в 0/max),
-        // поэтому первую/последнюю точки определяем по достижению края —
-        // иначе на десктопе крайние фото недостижимы, а точка «врёт».
-        if (track.scrollLeft <= 1) {
-          closest = 0;
-        } else if (track.scrollLeft >= maxScroll - 1) {
-          closest = track.children.length - 1;
-        } else {
-          const center = track.scrollLeft + track.clientWidth / 2;
-          let min = Infinity;
-          closest = 0;
-          Array.from(track.children).forEach((child, i) => {
-            const childCenter = child.offsetLeft + child.clientWidth / 2;
-            const dist = Math.abs(center - childCenter);
-            if (dist < min) {
-              min = dist;
-              closest = i;
-            }
-          });
-        }
-        setActive(closest);
-      });
-    };
-
-    track.addEventListener('scroll', onScroll, { passive: true });
-    return () => {
-      track.removeEventListener('scroll', onScroll);
-      cancelAnimationFrame(raf);
-      clearTimeout(snapTimer.current);
-    };
+    const mq = window.matchMedia(MOBILE_MQ);
+    const onChange = () => setVisible(mq.matches ? 1 : 3);
+    mq.addEventListener('change', onChange);
+    return () => mq.removeEventListener('change', onChange);
   }, []);
+
+  // Сдвигаем трек так, чтобы первый слайд окна встал к левому краю.
+  useEffect(() => {
+    const compute = () => {
+      const track = trackRef.current;
+      if (!track || !track.children[current]) return;
+      setOffset(-track.children[current].offsetLeft);
+    };
+    compute();
+    window.addEventListener('resize', compute);
+    return () => window.removeEventListener('resize', compute);
+  }, [current, visible]);
+
+  // Свайп пальцем / мышью.
+  const dragX = useRef(null);
+  const onPointerDown = (e) => {
+    dragX.current = e.clientX;
+  };
+  const onPointerUp = (e) => {
+    if (dragX.current == null) return;
+    const dx = e.clientX - dragX.current;
+    dragX.current = null;
+    if (dx <= -40) go(current + 1);
+    else if (dx >= 40) go(current - 1);
+  };
 
   return (
     <section className="section gallery" id="models">
@@ -79,14 +63,27 @@ export default function Gallery() {
         <h2>Наши модели</h2>
       </div>
 
-      <div className="gallery__viewport">
-        <div className="gallery__track" ref={trackRef}>
+      <div
+        className="gallery__viewport"
+        ref={viewportRef}
+        onPointerDown={onPointerDown}
+        onPointerUp={onPointerUp}
+        onPointerCancel={() => (dragX.current = null)}
+      >
+        <div
+          className="gallery__track"
+          ref={trackRef}
+          style={{ transform: `translate3d(${offset}px, 0, 0)` }}
+        >
           {MODELS.map((model, i) => (
             <figure className="gallery__slide" key={model.src} data-index={i + 1}>
               <img
                 src={model.src}
+                srcSet={`${model.src.replace(/\.jpg$/, '-sm.jpg')} 640w, ${model.src} 840w`}
+                sizes="(max-width: 700px) 88vw, 380px"
                 alt={model.alt}
                 loading="lazy"
+                decoding="async"
                 draggable="false"
                 onError={(e) => e.currentTarget.classList.add('is-broken')}
               />
@@ -97,32 +94,32 @@ export default function Gallery() {
         <button
           type="button"
           className="gallery__btn gallery__btn--prev"
-          onClick={handlePrev}
-          aria-label="Предыдущее фото"
-          disabled={active === 0}
+          onClick={() => go(current - 1)}
+          aria-label="Предыдущие фото"
+          disabled={current === 0}
         >
           ‹
         </button>
         <button
           type="button"
           className="gallery__btn gallery__btn--next"
-          onClick={handleNext}
-          aria-label="Следующее фото"
-          disabled={active === MODELS.length - 1}
+          onClick={() => go(current + 1)}
+          aria-label="Следующие фото"
+          disabled={current === steps - 1}
         >
           ›
         </button>
       </div>
 
       <div className="gallery__dots" role="group" aria-label="Навигация по фото">
-        {MODELS.map((_, i) => (
+        {Array.from({ length: steps }, (_, i) => (
           <button
             type="button"
             key={i}
-            className={`gallery__dot ${active === i ? 'is-active' : ''}`}
-            onClick={() => scrollToIndex(i)}
-            aria-label={`Перейти к фото ${i + 1}`}
-            aria-current={active === i}
+            className={`gallery__dot ${current === i ? 'is-active' : ''}`}
+            onClick={() => go(i)}
+            aria-label={visible === 1 ? `Перейти к фото ${i + 1}` : `Показать фото ${i + 1}–${i + visible}`}
+            aria-current={current === i}
           />
         ))}
       </div>

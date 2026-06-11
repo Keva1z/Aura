@@ -427,26 +427,26 @@ body::after {
 }
 .gallery__viewport {
   position: relative;
+  width: calc(100% - 2 * clamp(1.25rem, 5vw, 4rem));
+  max-width: var(--maxw);
+  margin-inline: auto;
+  overflow: hidden; /* обрезаем трек по краям окна карусели */
+  touch-action: pan-y; /* вертикальный скролл страницы работает, горизонталь — свайп */
 }
 .gallery__track {
+  --gap: clamp(0.5rem, 1.5vw, 1rem);
   position: relative;
   display: flex;
-  gap: clamp(1rem, 2.5vw, 1.75rem);
-  overflow-x: auto;
-  scroll-snap-type: x mandatory;
-  scrollbar-width: none;
-  -ms-overflow-style: none;
-  padding: 0 clamp(1.25rem, 5vw, 4rem);
+  gap: var(--gap);
+  width: 100%;
+  will-change: transform;
+  transition: transform 0.6s var(--ease);
 }
-.gallery__track::-webkit-scrollbar {
-  display: none;
-}
+/* Ровно 3 слайда в ширину окна: (ширина − 2 промежутка) / 3 */
 .gallery__slide {
   position: relative;
-  flex: 0 0 auto;
-  width: min(78vw, 420px);
+  flex: 0 0 calc((100% - 2 * var(--gap)) / 3);
   aspect-ratio: 3 / 4;
-  scroll-snap-align: center;
   background: linear-gradient(145deg, #1a1917, #0e0d0c);
   border: 1px solid var(--line);
   box-shadow:
@@ -544,6 +544,16 @@ body::after {
   background: var(--text);
   border-color: var(--text);
   transform: scale(1.3);
+}
+
+/* Телефон: одно крупное фото на весь экран окна, без стрелок — листаем свайпом */
+@media (max-width: 700px) {
+  .gallery__slide {
+    flex-basis: 100%;
+  }
+  .gallery__btn {
+    display: none;
+  }
 }
 
 /* ===== Offices ===== */
@@ -667,6 +677,8 @@ body::after {
   display: grid;
   grid-template-columns: 1fr;
   gap: 2.5rem;
+  justify-items: center; /* единственный контакт (почта) — по центру */
+  text-align: center;
 }
 .contact__item .label {
   font-size: 0.7rem;
@@ -686,12 +698,6 @@ body::after {
 }
 .contact__value:hover {
   opacity: 0.65;
-}
-
-@media (min-width: 720px) {
-  .contact__grid {
-    grid-template-columns: 1fr 1fr;
-  }
 }
 
 /* ===== Footer ===== */
