@@ -3,11 +3,9 @@
 //  После правок сохраните файл, сайт обновится автоматически.
 // ============================================================
 
-// TODO: вставьте реальную ссылку на личный диалог в Telegram
 export const TELEGRAM_URL = 'https://t.me/brbrcold';
 
-// TODO: вставьте реальную почту (сейчас — заглушка)
-export const EMAIL = 'info@aura-models.ru';
+export const EMAIL = 'Aura.model.kiss@gmail.com';
 
 // Города, в которых есть офисы (6–10 шт.)
 export const CITIES = [
